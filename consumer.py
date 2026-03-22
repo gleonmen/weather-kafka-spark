@@ -50,8 +50,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--brokers",
-        default="localhost:9092",
-        help="Comma-separated list of Kafka bootstrap brokers (default: localhost:9092)",
+        default="127.0.0.1:9092",
+        help="Comma-separated list of Kafka bootstrap brokers (default: 127.0.0.1:9092)",
     )
     parser.add_argument(
         "--group",

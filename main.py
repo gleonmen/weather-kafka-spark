@@ -1,36 +1,20 @@
-import os
 import requests
 from datetime import datetime
-from configparser import ConfigParser
 from services.kafka_service import KafkaService
+from services.weather_utils import WeatherUtils
+
 
 def get_weather(city):
     """Obtiene datos del clima desde WeatherAPI para una ciudad"""
-    config_path = 'config.properties'
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"No se encontró el archivo de configuración: {config_path}")
+    api_key = WeatherUtils.get_api_key()
+    url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={city}&aqi=no"
 
-    config = ConfigParser()
-    with open(config_path, 'r', encoding='utf-8') as f:
-        raw = f.read().strip()
-
-    if raw and not raw.startswith('['):
-        # Archivo tipo properties sin sección [DEFAULT]
-        raw = '[DEFAULT]\n' + raw
-
-    config.read_string(raw)
-    WEATHER_API_KEY = config.get('DEFAULT', 'weather_api_key', fallback=None)
-    if not WEATHER_API_KEY:
-        raise ValueError("WEATHER_API_KEY not found in config.properties")
-
-    url = f"http://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={city}&aqi=no"
-   
     try:
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
 
-        weather = {
+        return {
             "city": data["location"]["name"],
             "region": data["location"]["region"],
             "country": data["location"]["country"],
@@ -38,9 +22,8 @@ def get_weather(city):
             "humidity": data["current"]["humidity"],
             "wind_kph": data["current"]["wind_kph"],
             "condition": data["current"]["condition"]["text"],
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
         }
-        return weather
     except Exception as e:
         print(f"Error obteniendo clima de {city}: {e}")
         return None
