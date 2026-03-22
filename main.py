@@ -6,13 +6,23 @@ from services.kafka_service import KafkaService
 
 def get_weather(city):
     """Obtiene datos del clima desde WeatherAPI para una ciudad"""
+    config_path = 'config.properties'
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"No se encontró el archivo de configuración: {config_path}")
+
     config = ConfigParser()
-    config.read('config.properties')
-    WEATHER_API_KEY = config.get('DEFAULT', 'weather_api_key')
+    with open(config_path, 'r', encoding='utf-8') as f:
+        raw = f.read().strip()
+
+    if raw and not raw.startswith('['):
+        # Archivo tipo properties sin sección [DEFAULT]
+        raw = '[DEFAULT]\n' + raw
+
+    config.read_string(raw)
+    WEATHER_API_KEY = config.get('DEFAULT', 'weather_api_key', fallback=None)
     if not WEATHER_API_KEY:
         raise ValueError("WEATHER_API_KEY not found in config.properties")
-    
-   
+
     url = f"http://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={city}&aqi=no"
    
     try:
