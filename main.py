@@ -48,7 +48,7 @@ def get_weather(city):
 def main():
     # Initialize the service
     kafkaService = KafkaService(
-        bootstrap_servers="localhost:9092",
+        bootstrap_servers="127.0.0.1:9092",
         topic="weather-topic",
         group_id="weather-group"
     )
