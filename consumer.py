@@ -10,68 +10,43 @@ Example:
 """
 
 import argparse
-import json
 
-from kafka import KafkaConsumer
-
-
-def build_consumer(bootstrap_servers: str, topic: str, group_id: str) -> KafkaConsumer:
-    """Create a Kafka consumer.
-
-    Args:
-        bootstrap_servers: Comma-separated list of broker addresses (e.g., localhost:9092).
-        topic: Topic to subscribe to.
-        group_id: Consumer group id.
-
-    Returns:
-        KafkaConsumer instance.
-    """
-
-    consumer = KafkaConsumer(
-        topic,
-        bootstrap_servers=bootstrap_servers.split(","),
-        group_id=group_id,
-        auto_offset_reset="earliest",
-        enable_auto_commit=True,
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
-        key_deserializer=lambda k: k.decode("utf-8") if k else None,
-        api_version=(3, 0, 0),
-    )
-
-    return consumer
+from services.kafka_service import KafkaService
+from services.weather_utils import WeatherUtils
 
 
 def main() -> None:
+
+     
+    kafkaTopic = WeatherUtils.get_value_by_key(key="topic")
+    brokers = WeatherUtils.get_value_by_key(key="brokers")
+    group = WeatherUtils.get_value_by_key(key="group")
+
     parser = argparse.ArgumentParser(description="Simple Kafka consumer")
     parser.add_argument(
         "--topic",
-        default="weather-topic",
+        default=kafkaTopic,
         help="Kafka topic to consume from (default: weather-topic)",
     )
     parser.add_argument(
         "--brokers",
-        default="127.0.0.1:9092",
+        default=brokers,
         help="Comma-separated list of Kafka bootstrap brokers (default: 127.0.0.1:9092)",
     )
     parser.add_argument(
         "--group",
-        default="weather-group",
+        default=group,
         help="Consumer group id (default: weather-group)",
     )
     args = parser.parse_args()
 
-    consumer = build_consumer(args.brokers, args.topic, args.group)
+    kafka_service = KafkaService(
+        bootstrap_servers=args.brokers,
+        topic=args.topic,
+        group_id=args.group,
+    )
 
-    try:
-        print(f"Consuming from topic '{args.topic}' (group: {args.group})")
-        for message in consumer:
-            print(
-                f"topic={message.topic} partition={message.partition} offset={message.offset} key={message.key} value={message.value}"
-            )
-    except KeyboardInterrupt:
-        print("Interrupted by user")
-    finally:
-        consumer.close()
+    kafka_service.consume()
 
 
 if __name__ == "__main__":

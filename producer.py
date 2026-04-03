@@ -6,7 +6,7 @@ from services.weather_utils import WeatherUtils
 
 def get_weather(city):
     """Obtiene datos del clima desde WeatherAPI para una ciudad"""
-    api_key = WeatherUtils.get_api_key()
+    api_key = WeatherUtils.get_value_by_key(key="weather_api_key")
     url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={city}&aqi=no"
 
     try:
@@ -30,10 +30,14 @@ def get_weather(city):
 
 def main():
     # Initialize the service
+    kafkaTopic = WeatherUtils.get_value_by_key(key="topic")
+    brokers = WeatherUtils.get_value_by_key(key="brokers")
+    group = WeatherUtils.get_value_by_key(key="group")
+
     kafkaService = KafkaService(
-        bootstrap_servers="127.0.0.1:9092",
-        topic="weather-topic",
-        group_id="weather-group"
+        bootstrap_servers=brokers,
+        topic=kafkaTopic,
+        group_id=group
     )
 
     # Produce weather messages for cities

@@ -16,11 +16,15 @@ class KafkaService:
                 bootstrap_servers=self.bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
                 key_serializer=lambda k: k.encode("utf-8") if k else None,
-                api_version='auto',
+                api_version=(3, 0, 0),
+                linger_ms=10,
             )
         self.producer.send(self.topic, key=key, value=value)
         self.producer.flush()
         print(f"Produced: key={key}, value={value}")
+
+
+
 
     def consume(self) -> None:
         """Consume messages from the Kafka topic."""
