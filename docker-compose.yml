@@ -47,7 +47,51 @@ services:
     depends_on:
       - kafka
     networks:
-      - kafka-net 
+      - kafka-net
+
+  spark-master:
+    image: apache/spark:3.5.5
+    container_name: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master --port 7077 --webui-port 8080
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    networks:
+      - kafka-net
+
+  spark-worker:
+    image: apache/spark:3.5.5
+    container_name: spark-worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --webui-port 8080 --cores 1 --memory 1g
+    depends_on:
+      - spark-master
+    ports:
+      - "8082:8080"
+    networks:
+      - kafka-net
+
+  spark-streaming:
+    image: apache/spark:3.5.5
+    container_name: spark-streaming
+    depends_on:
+      - kafka
+      - spark-master
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_TOPIC: weather-spark-topic
+    volumes:
+      - ./spark:/opt/spark-apps
+    command: >
+      /bin/bash -lc "
+      mkdir -p /tmp/.ivy2 &&
+      /opt/spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --conf spark.jars.ivy=/tmp/.ivy2
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1
+      /opt/spark-apps/stream_weather.py
+      "
+    networks:
+      - kafka-net
 
 volumes:
   kafka_data: # Volumen nombrado para mayor estabilidad

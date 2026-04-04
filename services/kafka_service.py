@@ -9,8 +9,7 @@ class KafkaService:
         self.producer = None
         self.consumer = None
 
-    def produce(self, key: str, value: dict) -> None:
-        """Produce a message to the Kafka topic."""
+    def _get_producer(self) -> KafkaProducer:
         if not self.producer:
             self.producer = KafkaProducer(
                 bootstrap_servers=self.bootstrap_servers,
@@ -19,14 +18,19 @@ class KafkaService:
                 api_version=(3, 0, 0),
                 linger_ms=10,
             )
-        self.producer.send(self.topic, key=key, value=value)
-        self.producer.flush()
-        print(f"Produced: key={key}, value={value}")
+        return self.producer
 
+    def produce(self, key: str, value: dict) -> None:
+        """Produce a message to the Kafka topic."""
+        self.produce_to_topic(topic=self.topic, key=key, value=value)
 
+    def produce_to_topic(self, topic: str, key: str, value: dict) -> None:
+        producer = self._get_producer()
+        producer.send(topic, key=key, value=value)
+        producer.flush()
+        print(f"Produced: topic={topic} key={key}, value={value}")
 
-
-    def consume(self) -> None:
+    def consume(self, forward_topic: str = None) -> None:
         """Consume messages from the Kafka topic."""
         if not self.consumer:
             self.consumer = KafkaConsumer(
@@ -39,12 +43,21 @@ class KafkaService:
                 key_deserializer=lambda k: k.decode("utf-8") if k else None,
                 api_version='auto',
             )
+        if forward_topic and forward_topic == self.topic:
+            print("forward_topic is the same as source topic. Forwarding disabled to avoid loops.")
+            forward_topic = None
         try:
             print(f"Consuming from topic '{self.topic}' (group: {self.group_id})")
             for message in self.consumer:
                 print(
                     f"topic={message.topic} partition={message.partition} offset={message.offset} key={message.key} value={message.value}"
                 )
+                if forward_topic and message.value is not None:
+                    self.produce_to_topic(
+                        topic=forward_topic,
+                        key=message.key,
+                        value=message.value,
+                    )
         except KeyboardInterrupt:
             print("Interrupted by user")
         finally:

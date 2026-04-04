@@ -21,6 +21,7 @@ def main() -> None:
     kafkaTopic = WeatherUtils.get_value_by_key(key="topic")
     brokers = WeatherUtils.get_value_by_key(key="brokers")
     group = WeatherUtils.get_value_by_key(key="group")
+    spark_topic = WeatherUtils.get_value_by_key(key="spark_topic")
 
     parser = argparse.ArgumentParser(description="Simple Kafka consumer")
     parser.add_argument(
@@ -38,6 +39,16 @@ def main() -> None:
         default=group,
         help="Consumer group id (default: weather-group)",
     )
+    parser.add_argument(
+        "--spark-topic",
+        default=spark_topic,
+        help="Kafka topic used by Spark streaming (default: weather-spark-topic)",
+    )
+    parser.add_argument(
+        "--disable-spark-forward",
+        action="store_true",
+        help="Disable forwarding consumed messages to Spark topic",
+    )
     args = parser.parse_args()
 
     kafka_service = KafkaService(
@@ -46,7 +57,8 @@ def main() -> None:
         group_id=args.group,
     )
 
-    kafka_service.consume()
+    forward_topic = None if args.disable_spark_forward else args.spark_topic
+    kafka_service.consume(forward_topic=forward_topic)
 
 
 if __name__ == "__main__":
