@@ -49,6 +49,40 @@ You can override the Kafka broker list:
 python consumer.py --brokers host.docker.internal:9092 --topic test-topic --group my-group
 ```
 
+## Weather API integration (new)
+
+### Configuration
+
+1. Crear `config.properties` junto a `main.py` con:
+
+```
+weather_api_key=<tu-API-key-de-weatherapi>
+```
+
+2. Asegurarse de que la ruta sea `config.properties` (por defecto).
+
+### Clase utilitaria
+
+- `services/weather_utils.py` ahora incluye:
+  - `WeatherUtils.get_api_key(config_path="config.properties")`
+  - Solo lee/parsea archivo y devuelve la API key.
+
+### Producción de clima
+
+- `main.py` llama a `get_weather(city)`.
+- `get_weather` usa:
+  - `WeatherUtils.get_api_key()` para leer la clave.
+  - `requests` a `http://api.weatherapi.com/v1/current.json`.
+  - Construye el payload de clima y lo envía al topic `weather-topic` mediante `KafkaService`.
+
+### Ejecutar
+
+```bash
+python main.py
+```
+
+(siempre levantar Kafka con `docker compose up -d` primero)
+
 ## Verify messages
 
 You can use a Kafka client (e.g., `kafka-console-consumer`), or open the Kafka UI at `http://localhost:8090`.

@@ -17,10 +17,14 @@ class KafkaService:
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
                 key_serializer=lambda k: k.encode("utf-8") if k else None,
                 api_version=(3, 0, 0),
+                linger_ms=10,
             )
         self.producer.send(self.topic, key=key, value=value)
         self.producer.flush()
         print(f"Produced: key={key}, value={value}")
+
+
+
 
     def consume(self) -> None:
         """Consume messages from the Kafka topic."""
@@ -33,7 +37,7 @@ class KafkaService:
                 enable_auto_commit=True,
                 value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
                 key_deserializer=lambda k: k.decode("utf-8") if k else None,
-                api_version=(3, 0, 0),
+                api_version='auto',
             )
         try:
             print(f"Consuming from topic '{self.topic}' (group: {self.group_id})")
